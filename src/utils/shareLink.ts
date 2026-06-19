@@ -64,34 +64,20 @@ export function parseShareUrl(): {
   return { shareId, mode, listData }
 }
 
-// Raccourcit via shrtco.de (CORS natif, gratuit, sans clé)
+// Raccourcit via notre propre route API Vercel /api/shorten (pas de CORS)
 export async function shortenUrl(longUrl: string): Promise<string> {
-  // Ne pas raccourcir en local
   if (longUrl.includes('localhost')) return longUrl
-
   try {
     const res = await fetch(
-      `https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(longUrl)}`,
-      { signal: AbortSignal.timeout(6000) }
+      `/api/shorten?url=${encodeURIComponent(longUrl)}`,
+      { signal: AbortSignal.timeout(8000) }
     )
-    if (!res.ok) throw new Error('shrtco error')
+    if (!res.ok) return longUrl
     const json = await res.json()
-    if (json.ok && json.result?.full_short_link) return json.result.full_short_link
-  } catch {}
-
-  // Fallback : is.gd
-  try {
-    const res = await fetch(
-      `https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    if (res.ok) {
-      const short = await res.text()
-      if (short.startsWith('https://is.gd/') || short.startsWith('https://v.gd/')) return short.trim()
-    }
-  } catch {}
-
-  return longUrl
+    return json.short ?? longUrl
+  } catch {
+    return longUrl
+  }
 }
 
 export function buildWhatsAppUrl(text: string): string {
