@@ -178,7 +178,7 @@ function App() {
             <span>© {new Date().getFullYear()} TaskShare</span>
             <span className="mx-2">·</span>
             <span>Fait avec ♥ par{' '}
-              <a href="https://helloastrid.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors">Astrid</a>
+              <a href="https://helloastrid.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors">Astriart</a>
             </span>
           </footer>
         </main>
