@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar'
 import { ListEditor } from './components/ListEditor'
 import { SharedListView } from './components/SharedListView'
 import { AdSense } from './components/AdSense'
+import { Privacy } from './pages/Privacy'
 import { useTodoLists } from './hooks/useTodoLists'
 import { parseShareUrl } from './utils/shareLink'
 import type { TodoList } from './types/todo'
@@ -36,6 +37,7 @@ function App() {
     localStorage.setItem('taskshare_dark', String(darkMode))
   }, [darkMode])
 
+  const isPrivacyPage = window.location.pathname === '/privacy'
   const shareParams = parseShareUrl()
   const isSharedView = !!shareParams
 
@@ -48,6 +50,16 @@ function App() {
   const getListById = (id: string) => lists.find(l => l.id === id) ?? null
 
   const selectedList = selectedListId ? getListById(selectedListId) : null
+
+  // --- Page politique de confidentialité ---
+  if (isPrivacyPage) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
+        <Header menuOpen={false} onMenuToggle={() => {}} darkMode={darkMode} onDarkModeToggle={() => setDarkMode(d => !d)} />
+        <Privacy />
+      </div>
+    )
+  }
 
   // --- Vue partagée : données encodées dans l'URL, fonctionne cross-device ---
   if (isSharedView && shareParams) {
@@ -140,8 +152,8 @@ function App() {
         )}
 
         {/* Main */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-4 py-6">
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1 max-w-2xl w-full mx-auto px-4 py-6">
             {selectedList ? (
               <ListEditor
                 list={selectedList}
@@ -160,6 +172,11 @@ function App() {
               <EmptyState onCreateList={() => handleCreateList('Ma nouvelle liste')} />
             )}
           </div>
+          <footer className="text-center py-4 text-xs text-gray-400 dark:text-gray-600">
+            <a href="/privacy" className="hover:text-indigo-500 transition-colors">Politique de confidentialité</a>
+            <span className="mx-2">·</span>
+            <span>© {new Date().getFullYear()} TaskShare</span>
+          </footer>
         </main>
       </div>
     </div>
