@@ -73,20 +73,21 @@ function App() {
       window.location.href = window.location.origin + '/?imported=' + newId
     }
 
-    // Mode édition : on importe la liste dans le localStorage du destinataire
+    // Mode édition : on s'assure que la liste est dans le localStorage avant toute modif
+    const ensureImported = () => {
+      if (!getListById(listData.id)) importList(listData)
+    }
+
     const handleAddTask = (text: string) => {
-      const existing = getListById(listData.id)
-      if (!existing) importList(listData)
+      ensureImported()
       addTask(listData.id, text)
     }
     const handleUpdateTask = (taskId: string, changes: { text?: string; completed?: boolean }) => {
-      const existing = getListById(listData.id)
-      if (!existing) importList(listData)
+      ensureImported()
       updateTask(listData.id, taskId, changes)
     }
     const handleDeleteTask = (taskId: string) => {
-      const existing = getListById(listData.id)
-      if (!existing) importList(listData)
+      ensureImported()
       deleteTask(listData.id, taskId)
     }
 

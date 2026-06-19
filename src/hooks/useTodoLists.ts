@@ -175,19 +175,20 @@ export function useTodoLists() {
   }, [update])
 
   // Importe une liste reçue via un lien de partage dans le localStorage local
+  // Conserve l'ID original pour que addTask/updateTask/deleteTask fonctionnent immédiatement après
   const importList = useCallback((list: Pick<TodoList, 'id' | 'name' | 'createdAt' | 'tasks'>): string => {
-    const newId = crypto.randomUUID()
     update(prev => {
-      const copy: TodoList = {
-        id: newId,
-        name: `${list.name} (importée)`,
-        createdAt: new Date().toISOString().split('T')[0],
-        tasks: list.tasks.map(t => ({ ...t, id: crypto.randomUUID() })),
+      if (prev.lists.some(l => l.id === list.id)) return prev
+      const imported: TodoList = {
+        id: list.id,
+        name: list.name,
+        createdAt: list.createdAt,
+        tasks: list.tasks,
         shares: [],
       }
-      return { ...prev, lists: [...prev.lists, copy] }
+      return { ...prev, lists: [...prev.lists, imported] }
     })
-    return newId
+    return list.id
   }, [update])
 
   // Applique une modification sur une liste partagée (mode edit en session)
