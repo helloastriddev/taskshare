@@ -176,6 +176,10 @@ function App() {
             <a href="/privacy" className="hover:text-indigo-500 transition-colors">Politique de confidentialité</a>
             <span className="mx-2">·</span>
             <span>© {new Date().getFullYear()} TaskShare</span>
+            <span className="mx-2">·</span>
+            <span>Fait avec ♥ par{' '}
+              <a href="https://helloastrid.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors">Astrid</a>
+            </span>
           </footer>
         </main>
       </div>
