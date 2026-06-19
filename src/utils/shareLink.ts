@@ -8,18 +8,33 @@ export function generateSecureKey(): string {
   return crypto.randomUUID().replace(/-/g, '')
 }
 
-// Encode les données de la liste dans l'URL (gère les accents)
+// Encode en base64 URL-safe sans double-encodage (beaucoup plus court pour le français)
 export function encodeListData(list: TodoList): string {
   const payload = { id: list.id, name: list.name, createdAt: list.createdAt, tasks: list.tasks }
-  return btoa(encodeURIComponent(JSON.stringify(payload)))
+  const json = JSON.stringify(payload)
+  const bytes = new TextEncoder().encode(json)
+  const binary = Array.from(bytes, b => String.fromCharCode(b)).join('')
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
 // Décode les données depuis l'URL
 export function decodeListData(encoded: string): Pick<TodoList, 'id' | 'name' | 'createdAt' | 'tasks'> | null {
   try {
-    return JSON.parse(decodeURIComponent(atob(encoded)))
+    // Nouveau format : base64 URL-safe → UTF-8
+    const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4
+    const padded = pad ? b64 + '='.repeat(4 - pad) : b64
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return JSON.parse(new TextDecoder().decode(bytes))
   } catch {
-    return null
+    try {
+      // Ancien format (rétrocompatibilité)
+      return JSON.parse(decodeURIComponent(atob(encoded)))
+    } catch {
+      return null
+    }
   }
 }
 
@@ -49,19 +64,34 @@ export function parseShareUrl(): {
   return { shareId, mode, listData }
 }
 
-// Raccourcit une URL via is.gd (gratuit, sans clé API)
+// Raccourcit via shrtco.de (CORS natif, gratuit, sans clé)
 export async function shortenUrl(longUrl: string): Promise<string> {
+  // Ne pas raccourcir en local
+  if (longUrl.includes('localhost')) return longUrl
+
+  try {
+    const res = await fetch(
+      `https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(longUrl)}`,
+      { signal: AbortSignal.timeout(6000) }
+    )
+    if (!res.ok) throw new Error('shrtco error')
+    const json = await res.json()
+    if (json.ok && json.result?.full_short_link) return json.result.full_short_link
+  } catch {}
+
+  // Fallback : is.gd
   try {
     const res = await fetch(
       `https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`,
       { signal: AbortSignal.timeout(5000) }
     )
-    if (!res.ok) return longUrl
-    const short = await res.text()
-    return short.startsWith('https://is.gd/') ? short.trim() : longUrl
-  } catch {
-    return longUrl
-  }
+    if (res.ok) {
+      const short = await res.text()
+      if (short.startsWith('https://is.gd/') || short.startsWith('https://v.gd/')) return short.trim()
+    }
+  } catch {}
+
+  return longUrl
 }
 
 export function buildWhatsAppUrl(text: string): string {
