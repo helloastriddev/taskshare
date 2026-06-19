@@ -84,7 +84,7 @@ export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Liens actifs</p>
           {shares.map(share => {
-            const url = buildShareUrl(list.id, share)
+            const url = buildShareUrl(list, share)
             const waUrl = buildWhatsAppUrl(`${list.name} — ${url}`)
             const mailUrl = buildMailtoUrl(`Liste partagée : ${list.name}`, `Voici la liste "${list.name}" :\n${url}`)
             return (

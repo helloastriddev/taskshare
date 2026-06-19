@@ -163,6 +163,46 @@ export function useTodoLists() {
     }))
   }, [update])
 
+  // Importe une liste reçue via un lien de partage dans le localStorage local
+  const importList = useCallback((list: Pick<TodoList, 'id' | 'name' | 'createdAt' | 'tasks'>): string => {
+    const newId = crypto.randomUUID()
+    update(prev => {
+      const copy: TodoList = {
+        id: newId,
+        name: `${list.name} (importée)`,
+        createdAt: new Date().toISOString().split('T')[0],
+        tasks: list.tasks.map(t => ({ ...t, id: crypto.randomUUID() })),
+        shares: [],
+      }
+      return { ...prev, lists: [...prev.lists, copy] }
+    })
+    return newId
+  }, [update])
+
+  // Applique une modification sur une liste partagée (mode edit en session)
+  const applySharedTask = useCallback((
+    listId: string,
+    action: 'add' | 'update' | 'delete',
+    payload: { taskId?: string; text?: string; completed?: boolean }
+  ) => {
+    update(prev => ({
+      ...prev,
+      lists: prev.lists.map(l => {
+        if (l.id !== listId) return l
+        if (action === 'add') {
+          return { ...l, tasks: [...l.tasks, { id: crypto.randomUUID(), text: payload.text!, completed: false, createdAt: new Date().toISOString().split('T')[0] }] }
+        }
+        if (action === 'update') {
+          return { ...l, tasks: l.tasks.map(t => t.id === payload.taskId ? { ...t, ...payload } : t) }
+        }
+        if (action === 'delete') {
+          return { ...l, tasks: l.tasks.filter(t => t.id !== payload.taskId) }
+        }
+        return l
+      }),
+    }))
+  }, [update])
+
   // --- Accessible lists (lists received via share) ---
 
   const addAccessibleList = useCallback((entry: AccessibleList) => {
@@ -192,6 +232,8 @@ export function useTodoLists() {
     revokeShare,
     regenerateKey,
     addAccessibleList,
+    importList,
+    applySharedTask,
     getListById,
     rawState: state,
   }

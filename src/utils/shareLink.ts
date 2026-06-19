@@ -1,4 +1,4 @@
-import type { Share, ShareMode } from '../types/todo'
+import type { TodoList, Share, ShareMode } from '../types/todo'
 
 export function generateShareId(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 12)
@@ -8,22 +8,45 @@ export function generateSecureKey(): string {
   return crypto.randomUUID().replace(/-/g, '')
 }
 
-export function buildShareUrl(listId: string, share: Share): string {
+// Encode les données de la liste dans l'URL (gère les accents)
+export function encodeListData(list: TodoList): string {
+  const payload = { id: list.id, name: list.name, createdAt: list.createdAt, tasks: list.tasks }
+  return btoa(encodeURIComponent(JSON.stringify(payload)))
+}
+
+// Décode les données depuis l'URL
+export function decodeListData(encoded: string): Pick<TodoList, 'id' | 'name' | 'createdAt' | 'tasks'> | null {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded)))
+  } catch {
+    return null
+  }
+}
+
+// Construit l'URL de partage avec les données encodées
+export function buildShareUrl(list: TodoList, share: Share): string {
   const base = window.location.origin + window.location.pathname
-  const params = new URLSearchParams({ list: listId, share: share.id, mode: share.mode })
-  if (share.mode === 'edit') params.set('key', share.key)
+  const data = encodeListData(list)
+  const params = new URLSearchParams({ share: share.id, mode: share.mode, data })
   return `${base}?${params.toString()}`
 }
 
-export function parseShareUrl(): { listId: string; shareId: string; mode: ShareMode; key: string } | null {
+// Parse les paramètres de partage depuis l'URL courante
+export function parseShareUrl(): {
+  shareId: string
+  mode: ShareMode
+  listData: Pick<TodoList, 'id' | 'name' | 'createdAt' | 'tasks'>
+} | null {
   const params = new URLSearchParams(window.location.search)
-  const listId = params.get('list')
   const shareId = params.get('share')
   const mode = params.get('mode') as ShareMode | null
-  const key = params.get('key') ?? ''
+  const encoded = params.get('data')
 
-  if (!listId || !shareId || !mode) return null
-  return { listId, shareId, mode, key }
+  if (!shareId || !mode || !encoded) return null
+  const listData = decodeListData(encoded)
+  if (!listData) return null
+
+  return { shareId, mode, listData }
 }
 
 export function buildWhatsAppUrl(text: string): string {

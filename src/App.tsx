@@ -6,6 +6,7 @@ import { SharedListView } from './components/SharedListView'
 import { AdSense } from './components/AdSense'
 import { useTodoLists } from './hooks/useTodoLists'
 import { parseShareUrl } from './utils/shareLink'
+import type { TodoList } from './types/todo'
 import { CheckSquare, Plus } from 'lucide-react'
 
 function App() {
@@ -26,8 +27,7 @@ function App() {
     createShare,
     revokeShare,
     regenerateKey,
-    addAccessibleList,
-    getListById,
+    importList,
   } = useTodoLists()
 
   useEffect(() => {
@@ -38,55 +38,60 @@ function App() {
   const shareParams = parseShareUrl()
   const isSharedView = !!shareParams
 
-  useEffect(() => {
-    if (!shareParams) return
-    const list = getListById(shareParams.listId)
-    if (!list) return
-    const share = list.shares.find(s => s.id === shareParams.shareId)
-    if (!share) return
-    if (share.mode === 'edit' && share.key !== shareParams.key) return
-    addAccessibleList({
-      listId: shareParams.listId,
-      shareId: shareParams.shareId,
-      mode: shareParams.mode,
-      key: shareParams.key,
-      name: list.name,
-      accessedAt: new Date().toISOString(),
-    })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleCreateList = (name: string) => {
     const id = createList(name)
     setSelectedListId(id)
     setMenuOpen(false)
   }
 
-  const selectedList = selectedListId ? getListById(selectedListId) ?? null : null
+  const getListById = (id: string) => lists.find(l => l.id === id) ?? null
 
+  const selectedList = selectedListId ? getListById(selectedListId) : null
+
+  // --- Vue partagée : données encodées dans l'URL, fonctionne cross-device ---
   if (isSharedView && shareParams) {
-    const sharedList = getListById(shareParams.listId) ?? null
-    const share = sharedList?.shares.find(s => s.id === shareParams.shareId)
-    const valid = !!share && (share.mode === 'view' || share.key === shareParams.key)
+    const { mode, listData } = shareParams
+
+    // On construit un objet liste complet à partir des données de l'URL
+    const sharedList: TodoList = { ...listData, shares: [] }
+
+    const handleDuplicate = () => {
+      const newId = importList(listData)
+      window.location.href = window.location.origin + '/?imported=' + newId
+    }
+
+    // Mode édition : on importe la liste dans le localStorage du destinataire
+    const handleAddTask = (text: string) => {
+      const existing = getListById(listData.id)
+      if (!existing) importList(listData)
+      addTask(listData.id, text)
+    }
+    const handleUpdateTask = (taskId: string, changes: { text?: string; completed?: boolean }) => {
+      const existing = getListById(listData.id)
+      if (!existing) importList(listData)
+      updateTask(listData.id, taskId, changes)
+    }
+    const handleDeleteTask = (taskId: string) => {
+      const existing = getListById(listData.id)
+      if (!existing) importList(listData)
+      deleteTask(listData.id, taskId)
+    }
+
+    // Si la liste a déjà été importée, on affiche la version locale (avec les modifs)
+    const displayList = getListById(listData.id) ?? sharedList
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
         <Header menuOpen={false} onMenuToggle={() => {}} darkMode={darkMode} onDarkModeToggle={() => setDarkMode(d => !d)} />
         <main className="max-w-2xl mx-auto px-4 py-6">
           <SharedListView
-            list={sharedList}
-            mode={shareParams.mode}
-            valid={valid}
-            onAddTask={valid && shareParams.mode === 'edit' ? text => addTask(shareParams.listId, text) : undefined}
-            onUpdateTask={valid && shareParams.mode === 'edit' ? (taskId, changes) => updateTask(shareParams.listId, taskId, changes) : undefined}
-            onDeleteTask={valid && shareParams.mode === 'edit' ? taskId => deleteTask(shareParams.listId, taskId) : undefined}
-            onDuplicate={
-              valid && sharedList
-                ? () => {
-                    const newId = duplicateList(shareParams.listId)
-                    window.location.href = window.location.origin + '/?selected=' + newId
-                  }
-                : undefined
-            }
+            list={displayList}
+            mode={mode}
+            valid={true}
+            onAddTask={mode === 'edit' ? handleAddTask : undefined}
+            onUpdateTask={mode === 'edit' ? handleUpdateTask : undefined}
+            onDeleteTask={mode === 'edit' ? handleDeleteTask : undefined}
+            onDuplicate={handleDuplicate}
           />
         </main>
       </div>
