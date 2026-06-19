@@ -49,6 +49,21 @@ export function parseShareUrl(): {
   return { shareId, mode, listData }
 }
 
+// Raccourcit une URL via is.gd (gratuit, sans clé API)
+export async function shortenUrl(longUrl: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`,
+      { signal: AbortSignal.timeout(5000) }
+    )
+    if (!res.ok) return longUrl
+    const short = await res.text()
+    return short.startsWith('https://is.gd/') ? short.trim() : longUrl
+  } catch {
+    return longUrl
+  }
+}
+
 export function buildWhatsAppUrl(text: string): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`
 }

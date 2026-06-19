@@ -147,6 +147,17 @@ export function useTodoLists() {
     }))
   }, [update])
 
+  const setShortUrl = useCallback((listId: string, shareId: string, shortUrl: string) => {
+    update(prev => ({
+      ...prev,
+      lists: prev.lists.map(l =>
+        l.id === listId
+          ? { ...l, shares: l.shares.map(s => s.id === shareId ? { ...s, shortUrl } : s) }
+          : l
+      ),
+    }))
+  }, [update])
+
   const regenerateKey = useCallback((listId: string, shareId: string) => {
     update(prev => ({
       ...prev,
@@ -234,6 +245,7 @@ export function useTodoLists() {
     addAccessibleList,
     importList,
     applySharedTask,
+    setShortUrl,
     getListById,
     rawState: state,
   }

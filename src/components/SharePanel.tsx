@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, Copy, MessageCircle, Mail, RefreshCw, Trash2, ChevronDown } from 'lucide-react'
-import { buildShareUrl, buildWhatsAppUrl, buildMailtoUrl } from '../utils/shareLink'
+import { Link, Copy, MessageCircle, Mail, RefreshCw, Trash2, ChevronDown, Loader2 } from 'lucide-react'
+import { buildShareUrl, buildWhatsAppUrl, buildMailtoUrl, shortenUrl } from '../utils/shareLink'
 import type { TodoList, Share, ShareMode } from '../types/todo'
 
 interface SharePanelProps {
@@ -8,17 +8,26 @@ interface SharePanelProps {
   onCreateShare: (mode: ShareMode) => Share
   onRevokeShare: (shareId: string) => void
   onRegenerateKey: (shareId: string) => void
+  onSetShortUrl: (shareId: string, shortUrl: string) => void
 }
 
-export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey }: SharePanelProps) {
+export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey, onSetShortUrl }: SharePanelProps) {
   const [selectedMode, setSelectedMode] = useState<ShareMode>('view')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [modeOpen, setModeOpen] = useState(false)
+  const [shorteningId, setShorteningId] = useState<string | null>(null)
 
   const shares = list.shares
 
-  const handleGenerate = () => {
-    onCreateShare(selectedMode)
+  const handleGenerate = async () => {
+    const share = onCreateShare(selectedMode)
+    const longUrl = buildShareUrl(list, share)
+
+    // Raccourcissement automatique
+    setShorteningId(share.id)
+    const short = await shortenUrl(longUrl)
+    if (short !== longUrl) onSetShortUrl(share.id, short)
+    setShorteningId(null)
   }
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -84,9 +93,12 @@ export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Liens actifs</p>
           {shares.map(share => {
-            const url = buildShareUrl(list, share)
-            const waUrl = buildWhatsAppUrl(`${list.name} — ${url}`)
-            const mailUrl = buildMailtoUrl(`Liste partagée : ${list.name}`, `Voici la liste "${list.name}" :\n${url}`)
+            const longUrl = buildShareUrl(list, share)
+            const displayUrl = share.shortUrl ?? longUrl
+            const isShortening = shorteningId === share.id
+            const waUrl = buildWhatsAppUrl(`${list.name} — ${displayUrl}`)
+            const mailUrl = buildMailtoUrl(`Liste partagée : ${list.name}`, `Voici la liste "${list.name}" :\n${displayUrl}`)
+
             return (
               <div key={share.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -103,15 +115,23 @@ export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey
 
                 {/* URL */}
                 <div className="flex items-center gap-2">
-                  <input
-                    readOnly
-                    value={url}
-                    className="flex-1 text-xs px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 truncate"
-                  />
+                  {isShortening ? (
+                    <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                      <Loader2 size={12} className="animate-spin text-primary-500" />
+                      <span className="text-xs text-gray-400">Raccourcissement…</span>
+                    </div>
+                  ) : (
+                    <input
+                      readOnly
+                      value={displayUrl}
+                      className="flex-1 text-xs px-2 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 truncate font-medium"
+                    />
+                  )}
                   <button
-                    onClick={() => copyToClipboard(url, share.id)}
+                    onClick={() => copyToClipboard(displayUrl, share.id)}
+                    disabled={isShortening}
                     className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium transition-all ${
-                      copiedId === share.id ? 'bg-green-500 text-white' : 'bg-primary-500 text-white hover:bg-primary-600'
+                      copiedId === share.id ? 'bg-green-500 text-white' : 'bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50'
                     }`}
                   >
                     <Copy size={12} />
@@ -131,13 +151,13 @@ export function SharePanel({ list, onCreateShare, onRevokeShare, onRegenerateKey
                   </a>
                 </div>
 
-                {/* Edit mode: regenerate key */}
+                {/* Edit mode: regenerate */}
                 {share.mode === 'edit' && (
                   <button
-                    onClick={() => { if (confirm('Régénérer la clé ? L\'ancien lien sera invalidé.')) onRegenerateKey(share.id) }}
+                    onClick={() => { if (confirm("Régénérer ? L'ancien lien sera invalide.")) onRegenerateKey(share.id) }}
                     className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-orange-500 hover:text-orange-600 border border-orange-200 hover:border-orange-300 rounded-lg transition-colors"
                   >
-                    <RefreshCw size={12} /> Régénérer la clé (invalide l'ancien lien)
+                    <RefreshCw size={12} /> Régénérer (invalide l'ancien lien)
                   </button>
                 )}
               </div>

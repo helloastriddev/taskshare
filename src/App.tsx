@@ -28,6 +28,7 @@ function App() {
     revokeShare,
     regenerateKey,
     importList,
+    setShortUrl,
   } = useTodoLists()
 
   useEffect(() => {
@@ -153,6 +154,7 @@ function App() {
                 onCreateShare={mode => createShare(selectedList.id, mode)}
                 onRevokeShare={shareId => revokeShare(selectedList.id, shareId)}
                 onRegenerateKey={shareId => regenerateKey(selectedList.id, shareId)}
+                onSetShortUrl={(shareId, short) => setShortUrl(selectedList.id, shareId, short)}
               />
             ) : (
               <EmptyState onCreateList={() => handleCreateList('Ma nouvelle liste')} />

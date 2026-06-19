@@ -16,6 +16,7 @@ interface ListEditorProps {
   onCreateShare: (mode: ShareMode) => Share
   onRevokeShare: (shareId: string) => void
   onRegenerateKey: (shareId: string) => void
+  onSetShortUrl: (shareId: string, shortUrl: string) => void
 }
 
 export function ListEditor({
@@ -29,6 +30,7 @@ export function ListEditor({
   onCreateShare,
   onRevokeShare,
   onRegenerateKey,
+  onSetShortUrl,
 }: ListEditorProps) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(list.name)
@@ -168,6 +170,7 @@ export function ListEditor({
             onCreateShare={onCreateShare}
             onRevokeShare={onRevokeShare}
             onRegenerateKey={onRegenerateKey}
+            onSetShortUrl={onSetShortUrl}
           />
         </div>
       </div>

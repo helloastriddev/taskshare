@@ -11,6 +11,7 @@ export interface Share {
   key: string
   createdAt: string
   lastAccessedAt: string
+  shortUrl?: string
 }
 
 export interface TodoList {
