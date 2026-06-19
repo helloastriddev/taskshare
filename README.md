@@ -1,73 +1,145 @@
-# React + TypeScript + Vite
+# TaskShare — Todo List Collaborative & PWA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Une app de listes de tâches **gratuite**, **sans compte**, **installable sur mobile/desktop** et **partageable** avec n'importe qui via un simple lien.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Fonctionnalités
 
-## React Compiler
+- Créer, modifier et supprimer des listes de tâches
+- Partager une liste en **lecture seule** ou en **édition collaborative**
+- Synchronisation en temps réel entre onglets (localStorage)
+- Installable sur écran d'accueil (PWA — iPhone, Android, PC)
+- Fonctionne **100% hors ligne**
+- Dark mode
+- Aucun compte, aucun backend, aucune donnée envoyée
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Stack technique
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 19 + TypeScript
+- Vite + vite-plugin-pwa
+- Tailwind CSS v3
+- localStorage (pas de base de données)
+- Lucide React (icônes)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Lancer le projet en local
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Prérequis
+
+- Node.js 18+ installé — vérifier avec `node -v`
+- npm installé — vérifier avec `npm -v`
+
+### Étape 1 — Cloner le projet
+
+```bash
+git clone https://github.com/TON-PSEUDO/taskshare.git
+cd taskshare
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Étape 2 — Installer les dépendances
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+### Étape 3 — Lancer en développement
+
+```bash
+npm run dev
+```
+
+L'app est accessible sur **http://localhost:5173**
+
+---
+
+## Build pour la production
+
+```bash
+npm run build
+```
+
+Les fichiers générés sont dans le dossier `dist/`. Le service worker PWA est automatiquement inclus.
+
+### Prévisualiser le build
+
+```bash
+npm run preview
+```
+
+---
+
+## Déployer sur Vercel
+
+### Option 1 — Via l'interface (recommandé)
+
+1. Aller sur [vercel.com](https://vercel.com) et se connecter avec GitHub
+2. Cliquer **"Add New Project"**
+3. Sélectionner le repo `taskshare`
+4. Laisser les paramètres par défaut (Vercel détecte Vite automatiquement)
+5. Cliquer **"Deploy"**
+
+L'app est en ligne sur `taskshare.vercel.app` en moins de 2 minutes.
+
+### Option 2 — Via la CLI
+
+```bash
+npm install -g vercel
+vercel
+```
+
+---
+
+## Intégrer Google AdSense
+
+Les emplacements sont déjà prêts dans le code. Il suffit de remplacer les valeurs dans `src/components/AdSense.tsx` :
+
+```tsx
+data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"   // ton Publisher ID
+data-ad-slot="XXXXXXXXXX"                   // ton Ad Slot ID
+```
+
+---
+
+## Structure du projet
+
+```
+src/
+├── components/
+│   ├── Header.tsx          # Header sticky + bouton installer PWA
+│   ├── Sidebar.tsx         # Navigation + liste des listes
+│   ├── ListEditor.tsx      # Éditeur de liste + ajout tâches
+│   ├── TaskItem.tsx        # Tâche individuelle (checkbox, edit, delete)
+│   ├── SharePanel.tsx      # Génération et gestion des liens de partage
+│   ├── SharedListView.tsx  # Vue pour les liens partagés
+│   └── AdSense.tsx         # Composant publicité
+├── hooks/
+│   └── useTodoLists.ts     # Toute la logique métier + localStorage
+├── types/
+│   └── todo.ts             # Types TypeScript
+└── utils/
+    ├── storage.ts          # Lecture/écriture localStorage
+    └── shareLink.ts        # Génération des URLs de partage
+```
+
+---
+
+## Partage de listes
+
+Deux modes disponibles :
+
+| Mode | Ce que voit le destinataire |
+|---|---|
+| Lecture seule | Voit la liste, peut la dupliquer, ne peut pas modifier |
+| Édition collaborative | Peut ajouter, cocher et supprimer des tâches |
+
+Le propriétaire peut **révoquer** un lien d'édition à tout moment en régénérant la clé.
+
+---
+
+## Licence
+
+MIT — libre d'utilisation, modification et distribution.
